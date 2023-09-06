@@ -1,3 +1,4 @@
+import { Logger, NotFoundException } from '@nestjs/common';
 import {
   DeepPartial,
   EntityManager,
@@ -11,6 +12,7 @@ import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity
  * @template T The type of the entity being managed by the repository.
  */
 export abstract class BaseRepository<T> {
+    protected readonly logger = new Logger(BaseRepository.name)
   /**
    * Creates a new instance of the `BaseRepository` class.
    * @param entityClass The class of the entity being managed by the repository.
@@ -27,17 +29,26 @@ export abstract class BaseRepository<T> {
    * @returns A promise that resolves to the created entity.
    */
   async create(data: DeepPartial<T>): Promise<T> {
+   try {
     const entity = this.entityManager.create(this.entityClass, data);
     return await this.entityManager.save(entity);
+   } catch (error) {
+    this.logger.log(error)
+   }
   }
 
   /**
-   * Finds an entity by ID using the provided options.
-   * @param options The options to find the entity.
+   * Find an entity by its ID using the provided options.
+   * @param options - The options to find the entity.
    * @returns A promise that resolves to the found entity, or undefined if not found.
+   * @throws NotFoundException if the entity is not found.
    */
   async findById(options: FindOneOptions<T>): Promise<T | undefined> {
-    return await this.entityManager.findOne(this.entityClass, options);
+    const entity = await this.entityManager.findOne(this.entityClass, options);
+    if (!entity) {
+      throw new NotFoundException('Entity not found');
+    }
+    return entity;
   }
 
   /**
@@ -67,7 +78,7 @@ export abstract class BaseRepository<T> {
    * Finds all entities of the specified type.
    * @returns A promise that resolves to an array of all entities.
    */
-  async findAll(): Promise<T[]> {
-    return await this.entityManager.find(this.entityClass);
+  async findAll(options?: FindOneOptions<T>): Promise<T[]> {
+    return await this.entityManager.find(this.entityClass, options);
   }
 }

@@ -22,7 +22,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       path: request.url,
       message: exception.message,
     };
-    this.writeHttpLog(body);
+    // this.writeHttpLog(body);
     response.status(status).json(body);
   }
   async writeHttpLog(body: Record<string, any>) {
